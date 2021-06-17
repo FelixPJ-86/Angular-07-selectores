@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { switchMap, tap } from "rxjs/operators";
 
 import { PaisesService } from '../../services/paises.service';
-import { PaisSamll } from '../../interfaces/paises.interface';
+import { PaisSmall } from '../../interfaces/paises.interface';
 
 
 @Component({
@@ -22,8 +22,11 @@ export class SelectorPageComponent implements OnInit {
   });
 
 
-  regiones:string[]=[];
-  paises:PaisSamll[]=[];
+  regiones :string[]=[];
+  paises   :PaisSmall[]=[];
+  // fronteras: string[]=[];
+   fronteras: PaisSmall[]=[];
+  cargando:boolean=false;
 
   constructor(private fb:FormBuilder,
               private paisesService:PaisesService) { }
@@ -48,18 +51,31 @@ export class SelectorPageComponent implements OnInit {
         .pipe(
           tap( _ =>{
             this.miFormulario.get('pais')?.reset('');
+            this.cargando=true;
           }),
           switchMap( region => this.paisesService.getPaisesPorRegion(region) )
         )
         .subscribe( paises => {
           this.paises =paises;
+          this.cargando=false;
         });
 
 
     //cuando cambia  el país
     this.miFormulario.get('pais')?.valueChanges
-    .subscribe( codigo => {
-      
+    .pipe(
+      tap(_=>{
+        this.fronteras=[];
+        this.miFormulario.get('frontera')?.reset('');
+        this.cargando=true;
+      }
+      ),
+      switchMap( codigo => this.paisesService.getPaisPorCodigo(codigo)),
+      switchMap( pais=> this.paisesService.getPaisesPorCodigos(pais?.borders!))
+    )
+    .subscribe( paises => {
+       this.fronteras = paises;
+      this.cargando=false;
     });
 
 
